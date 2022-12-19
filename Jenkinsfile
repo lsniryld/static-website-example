@@ -1,0 +1,175 @@
+pipeline{
+	environment {
+		IMAGE_NAME= "staticwebsite"
+        IMAGE_TAG= "v1"
+    	STAGING = "niry-staging"
+    	PRODUCTION = "niry-production"
+		ID_DOCKER = "${ID_DOCKER_PARAMS}"
+		APP_NAME = "nini"
+		RVW_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
+		RVW_APP_ENDPOINT = "http://ip10-0-3-3-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
+		STG_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
+		STG_APP_ENDPOINT = "http://ip10-0-3-3-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
+		PROD_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
+		PROD_APP_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
+		INTERNAL_PORT = "80"  #80
+		EXTERNAL_PORT = "${PORT_EXPOSED}"  #80
+		CONTAINER_IMAGE = "${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG"
+
+    }
+    agent none
+  	stages{
+		stage('Build image'){
+			agent any
+			steps {
+				script{
+					sh 'docker build -t $ID_DOCKER/$IMAGE_NAME:$IMAGE_TAG .'
+					}
+			}
+		}
+		stage('Code quality'){
+			agent any
+			steps {
+				script{
+					sh 'docker build -t $ID_DOCKER/$IMAGE_NAME:$IMAGE_TAG .'
+					}
+			}
+		}
+		stage('Tests'){
+			agent any
+			steps {
+				script{
+					sh '''
+					echo "Clean environment"
+					docker rm -f $IMAGE_NAME || echo "Container does not exist"
+					docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:${INTERNAL_PORT} -e PORT=${INTERNAL_PORT} ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
+					sleep 5
+					'''
+					}
+			}
+		}
+		stage('Packages'){
+			agent any
+			steps {
+				script{
+					sh 'docker build -t $ID_DOCKER/$IMAGE_NAME:$IMAGE_TAG .'
+					}
+			}
+		}
+		
+		stage('Review Test'){
+			agent any
+			steps {
+				script{
+					sh '''
+					curl $STG_APP_ENDPOINT | grep -q "Dimension"
+					'''
+					}
+			}
+		}
+		
+		stage('Staging deploy'){
+			when {
+				expression { GIT_BRANCH == 'origin/main' }
+			}
+			agent any
+			steps {
+				script{
+					sh """
+					curl -X POST ${STG_API_ENDPOINT}/staging -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
+					"""
+				}
+			}
+		}
+		
+		stage('Production deploy'){
+			when {
+				expression { GIT_BRANCH == 'origin/main' }
+			}
+			agent any
+			steps {
+				script{
+					sh """
+					curl -X POST ${STG_API_ENDPOINT}/prod -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
+					"""
+				}
+			}
+		}
+		
+		
+		stage('Run container based on builded image'){
+			agent any
+			steps {
+				script{
+					sh '''
+					echo "Clean environment"
+					docker rm -f $IMAGE_NAME || echo "Container does not exist"
+					docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:${INTERNAL_PORT} -e PORT=${INTERNAL_PORT} ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
+					sleep 5
+					'''
+				}
+			}
+		}
+		stage('Test image'){
+			agent any
+			steps {
+				script{
+					sh '''
+					curl $STG_APP_ENDPOINT | grep -q "Hello"
+					'''
+				}
+			}
+		}
+		stage('Clean container'){
+			agent any
+			steps {
+				script{
+					sh '''
+					docker stop $IMAGE_NAME 
+					docker rm $IMAGE_NAME
+					'''
+				}
+			}
+		}
+		stage ('Login and Push Image on docker hub') {
+          	agent any
+          	environment {
+           		DOCKERHUB_PASSWORD  = credentials('3779a8c9-ca98-4656-9713-3d454f651a90')
+          	}  
+          	steps {
+             	script {
+               		sh '''
+                   		echo $DOCKERHUB_PASSWORD_PSW | docker login -u $ID_DOCKER --password-stdin
+                   		docker push ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
+               		'''
+             	}
+          	}
+        }   
+		stage('STAGING - Deploy app'){	
+			when {
+				expression { GIT_BRANCH == 'origin/master' }
+			}
+			agent any
+			steps {
+				script{
+					sh """
+					curl -X POST ${STG_API_ENDPOINT}/staging -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
+					"""
+				}
+			}
+		}
+		stage('PRODUCTION - Deploy app'){	
+			when {
+				expression { GIT_BRANCH == 'origin/master' }
+			}
+			agent any
+			steps {
+				script{
+					sh """
+					curl -X POST ${STG_API_ENDPOINT}/prod -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
+					"""
+				}
+			}
+		}
+  }
+}

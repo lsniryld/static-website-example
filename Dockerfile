@@ -4,7 +4,7 @@ RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y nginx git
 EXPOSE 80
 RUN mkdir -p /var/www/html/
-RUN rm -Rf /var/www/html/*
+RUN rm -rf /var/www/html/*
 ADD assets /var/www/html/
 ADD error /var/www/html/
 ADD images /var/www/html/
