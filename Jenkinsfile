@@ -8,10 +8,10 @@ pipeline{
 		APP_NAME = "nini"
 		RVW_API_ENDPOINT = "http://ip10-0-4-4-ceh1rfomjkegg872buj0-1993.direct.docker.labs.eazytraining.fr"
 		RVW_APP_ENDPOINT = "http://ip10-0-4-4-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
-		STG_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
-		STG_APP_ENDPOINT = "http://ip10-0-3-3-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
-		PROD_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
-		PROD_APP_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
+		STG_API_ENDPOINT = "http://ip10-0-4-5-ceh1rfomjkegg872buj0-1993.direct.docker.labs.eazytraining.fr"
+		STG_APP_ENDPOINT = "http://ip10-0-4-5-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
+		PROD_API_ENDPOINT = "http://ip10-0-4-6-ceh1rfomjkegg872buj0-1993.direct.docker.labs.eazytraining.fr"
+		PROD_APP_ENDPOINT = "http://ip10-0-4-6-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
 		URL_APP_ENDPOINT = "http://ip10-0-4-3-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
 		INTERNAL_PORT = "80" 
 		EXTERNAL_PORT = "${PORT_EXPOSED}"  
@@ -52,7 +52,7 @@ pipeline{
 		stage('Packages'){
 			agent any
           	environment {
-           		DOCKERHUB_PASSWORD  = credentials('3779a8c9-ca98-4656-9713-3d454f651a90')
+           		DOCKERHUB_PASSWORD  = credentials('DOCKER_LOGIN')
           	}  
           	steps {
              	script {
