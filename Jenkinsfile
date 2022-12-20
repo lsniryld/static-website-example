@@ -2,9 +2,7 @@ pipeline{
 	environment {
 		IMAGE_NAME= "staticwebsite"
         	IMAGE_TAG= "v1"
-    		STAGING = "niry-staging"
-    		PRODUCTION = "niry-production"
-		ID_DOCKER = "${ID_DOCKER_PARAMS}"
+    		ID_DOCKER = "${ID_DOCKER_PARAMS}"
 		APP_NAME = "nini"
 		RVW_API_ENDPOINT = "http://ip10-0-4-4-ceh1rfomjkegg872buj0-1993.direct.docker.labs.eazytraining.fr"
 		RVW_APP_ENDPOINT = "http://ip10-0-4-4-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
