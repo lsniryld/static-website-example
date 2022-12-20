@@ -12,6 +12,7 @@ pipeline{
 		STG_APP_ENDPOINT = "http://ip10-0-3-3-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
 		PROD_API_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-1993.direct.docker.labs.eazytraining.fr"
 		PROD_APP_ENDPOINT = "http://ip10-0-3-4-cedmof4iqmmgg4teoer0-80.direct.docker.labs.eazytraining.fr"
+		URL_APP_ENDPOINT = "http://ip10-0-4-3-ceh1rfomjkegg872buj0-80.direct.docker.labs.eazytraining.fr"
 		INTERNAL_PORT = "80" 
 		EXTERNAL_PORT = "${PORT_EXPOSED}"  
 		CONTAINER_IMAGE = "${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG"
@@ -44,7 +45,7 @@ pipeline{
 			agent any
 			steps {
 				script{
-					sh 'curl $STG_APP_ENDPOINT | grep -q "Dimension" '
+					sh 'curl $URL_APP_ENDPOINT | grep -q "Dimension" '
 					}
 			}
 		}
