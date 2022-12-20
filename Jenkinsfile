@@ -27,15 +27,7 @@ pipeline{
 					}
 			}
 		}
-		stage('Code quality'){
-			agent any
-			steps {
-				script{
-					sh 'docker build -t $ID_DOCKER/$IMAGE_NAME:$IMAGE_TAG .'
-					}
-			}
-		}
-		stage('Tests'){
+		stage('Run container'){
 			agent any
 			steps {
 				script{
@@ -47,24 +39,41 @@ pipeline{
 					'''
 					}
 			}
-		}
-		stage('Packages'){
+		} 
+		stage('Tests'){
 			agent any
 			steps {
 				script{
-					sh 'docker build -t $ID_DOCKER/$IMAGE_NAME:$IMAGE_TAG .'
+					sh 'curl $STG_APP_ENDPOINT | grep -q "Dimension" '
 					}
 			}
 		}
+		stage('Packages'){
+			agent any
+          	environment {
+           		DOCKERHUB_PASSWORD  = credentials('3779a8c9-ca98-4656-9713-3d454f651a90')
+          	}  
+          	steps {
+             	script {
+               		sh '''
+                   		echo $DOCKERHUB_PASSWORD_PSW | docker login -u $ID_DOCKER --password-stdin
+                   		docker push ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
+               		'''
+             	}
+          	}
+		} 
 		
 		stage('Review Test'){
+			when {
+				expression { GIT_BRANCH == 'origin/main' }
+			}
 			agent any
 			steps {
 				script{
-					sh '''
-					curl $STG_APP_ENDPOINT | grep -q "Dimension"
-					'''
-					}
+					sh """
+					curl -X POST ${RVW_API_ENDPOINT}/review -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
+					"""
+				}
 			}
 		}
 		
@@ -96,80 +105,5 @@ pipeline{
 			}
 		}
 		
-		
-		stage('Run container based on builded image'){
-			agent any
-			steps {
-				script{
-					sh '''
-					echo "Clean environment"
-					docker rm -f $IMAGE_NAME || echo "Container does not exist"
-					docker run --name $IMAGE_NAME -d -p ${PORT_EXPOSED}:${INTERNAL_PORT} -e PORT=${INTERNAL_PORT} ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
-					sleep 5
-					'''
-				}
-			}
-		}
-		stage('Test image'){
-			agent any
-			steps {
-				script{
-					sh '''
-					curl $STG_APP_ENDPOINT | grep -q "Hello"
-					'''
-				}
-			}
-		}
-		stage('Clean container'){
-			agent any
-			steps {
-				script{
-					sh '''
-					docker stop $IMAGE_NAME 
-					docker rm $IMAGE_NAME
-					'''
-				}
-			}
-		}
-		stage ('Login and Push Image on docker hub') {
-          	agent any
-          	environment {
-           		DOCKERHUB_PASSWORD  = credentials('3779a8c9-ca98-4656-9713-3d454f651a90')
-          	}  
-          	steps {
-             	script {
-               		sh '''
-                   		echo $DOCKERHUB_PASSWORD_PSW | docker login -u $ID_DOCKER --password-stdin
-                   		docker push ${ID_DOCKER}/$IMAGE_NAME:$IMAGE_TAG
-               		'''
-             	}
-          	}
-        }   
-		stage('STAGING - Deploy app'){	
-			when {
-				expression { GIT_BRANCH == 'origin/master' }
-			}
-			agent any
-			steps {
-				script{
-					sh """
-					curl -X POST ${STG_API_ENDPOINT}/staging -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
-					"""
-				}
-			}
-		}
-		stage('PRODUCTION - Deploy app'){	
-			when {
-				expression { GIT_BRANCH == 'origin/master' }
-			}
-			agent any
-			steps {
-				script{
-					sh """
-					curl -X POST ${STG_API_ENDPOINT}/prod -H 'Content-Type: application/json' -d '{"your_name":"niry","container_image":"${CONTAINER_IMAGE}", "external_port":"${EXTERNAL_PORT}", "internal_port":"INTERNAL_PORT"}'
-					"""
-				}
-			}
-		}
   }
 }
